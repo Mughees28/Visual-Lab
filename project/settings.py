@@ -101,7 +101,7 @@ DATABASES = {
         'NAME': 'visualab_db',
         'USER': 'root',
         'PASSWORD': 'iamboss28',
-        'HOST': 'localhost',
+        'HOST': '127.0.0.1',
         'PORT': '3306',
     }
 }
