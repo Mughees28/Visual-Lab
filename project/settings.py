@@ -99,8 +99,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'visualab_db',
-        'USER': 'root2',
-        'PASSWORD': 'jack123',
+        'USER': 'root',
+        'PASSWORD': 'iamboss28',
         'HOST': 'localhost',
         'PORT': '3306',
     }
