@@ -101,7 +101,7 @@ DATABASES = {
         'NAME': 'visualab_db',
         'USER': 'root',
         'PASSWORD': 'iamboss28',
-        'HOST': 'localhost',
+        'HOST': 'visualab.vercel.app',
         'PORT': '3306',
     }
 }
