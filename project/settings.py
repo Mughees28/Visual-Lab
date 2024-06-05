@@ -30,7 +30,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost',
     '127.0.0.1',
-    'visualab.vercel.app']
+    'visualab.vercel.app',
+    'visual-mtfjprgfb-mughees-projects-9c5aaeaa.vercel.app']
 
 
 # Application definition
