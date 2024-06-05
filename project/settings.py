@@ -87,12 +87,12 @@ WSGI_APPLICATION = "project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
  
 # settings.py
 
@@ -108,16 +108,17 @@ WSGI_APPLICATION = "project.wsgi.application"
 #         'PORT': '3306',
 #     }
 # }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'visualab_db',
-        'USER': 'postgres',
-        'PASSWORD': 'hello@world',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'visualab_db',
+#         'USER': 'postgres',
+#         'PASSWORD': 'hello@world',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
+DATABASES["default"]=dj_database_url.config()
 
 #DATABASES['default'] = dj_database_url.config(default=config('DATABASE_URL', default='postgresql://postgres:pqsSUMWmLMQaDZjmwJETvQRafnUIXHpj@roundhouse.proxy.rlwy.net:53446/railway'))
 
