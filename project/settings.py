@@ -108,17 +108,17 @@ DATABASES = {
 #         'PORT': '3306',
 #     }
 # }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'visualab_db',
-#         'USER': 'postgres',
-#         'PASSWORD': 'hello@world',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
-DATABASES["default"]=dj_database_url.config()
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'railway',
+        'USER': 'postgres',
+        'PASSWORD': 'qgFHDYgAjVucuHhKpgPNkWhwRIXzMJMM',
+        'HOST': 'viaduct.proxy.rlwy.net',
+        'PORT': '32887',
+    }
+}
+#DATABASES["default"]=dj_database_url.config()
 
 #DATABASES['default'] = dj_database_url.config(default=config('DATABASE_URL', default='postgresql://postgres:pqsSUMWmLMQaDZjmwJETvQRafnUIXHpj@roundhouse.proxy.rlwy.net:53446/railway'))
 
