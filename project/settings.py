@@ -113,9 +113,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'railway',
         'USER': 'postgres',
-        'PASSWORD': 'qgFHDYgAjVucuHhKpgPNkWhwRIXzMJMM',
-        'HOST': 'viaduct.proxy.rlwy.net',
-        'PORT': '32887',
+        'PASSWORD': 'hlsBpUQQzBJofafxRWbjJzrZRLhRllyI',
+        'HOST': 'monorail.proxy.rlwy.net',
+        'PORT': '35517',
     }
 }
 #DATABASES["default"]=dj_database_url.config()
