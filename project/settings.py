@@ -54,10 +54,11 @@ AUTH_USER_MODEL='base.User'
 ASGI_APPLICATION ='project.asgi.application'
 
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
+    'default':{
+        'BACKEND':'channels.layers.InMemoryChannelLayer'
+    }
 }
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
