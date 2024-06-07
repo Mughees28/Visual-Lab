@@ -37,6 +37,7 @@ ALLOWED_HOSTS = ['localhost',
 # Application definition
 
 INSTALLED_APPS = [
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -49,6 +50,8 @@ INSTALLED_APPS = [
     # 'rest_framework',
 ]
 AUTH_USER_MODEL='base.User'
+
+ASGI_APPLICATION ='project.asgi.application'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
