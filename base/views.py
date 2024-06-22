@@ -1,10 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import HttpResponse
-
-
+from django.http import HttpResponse, JsonResponse
+import logging
+import json
 from django.contrib.auth import authenticate, login, logout
 from .models import Room,Topic, Message,User
 from .forms import RoomForm, UserForm, MyUserCreationForm
@@ -62,22 +62,44 @@ def home(request):
     context ={'rooms': rooms, 'topics':topics, 'room_count':room_count, 'room_messages': room_messages}
     
     return render(request,'base/home.html',context)
-def room(request,pk):
-    room = Room.objects.get(id=pk)
-    room_messages =room.message_set.all()
-    participants =room.participants.all()
-    if request.method =='POST':
-        message = Message.objects.create(
-            user=request.user,
-            room=room,
-            body=request.POST.get('body')
-        )
-        room.participants.add(request.user)
-        return redirect('room',pk=room.id)
 
-    context ={'room': room,'room_messages':room_messages, 'participants':participants}
-    return render(request,'base/room.html',context)
+logger = logging.getLogger(__name__)
 
+def room(request, pk):
+    room = get_object_or_404(Room, id=pk)
+    room_messages = room.message_set.all().order_by('-created')
+    participants = room.participants.all()
+
+    if request.method == 'POST' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        try:
+            data = json.loads(request.body)
+            body = data.get('message')
+
+            if not body:
+                raise ValueError("Message body is empty")
+
+            message = Message.objects.create(
+                user=request.user,
+                room=room,
+                body=body
+            )
+            room.participants.add(request.user)
+
+            return JsonResponse({
+                'message': message.body,
+                'user_id': message.user.id,
+                'username': message.user.username,
+                'user_avatar': message.user.avatar.url,
+                'message_id': message.id,
+                'is_user': True,
+                'created_at': message.created.strftime('%Y-%m-%d %H:%M:%S')  # Return the created time
+            })
+        except Exception as e:
+            logger.error(f"Error processing request: {str(e)}")
+            return JsonResponse({'error': str(e)}, status=400)
+
+    context = {'room': room, 'room_messages': room_messages, 'participants': participants}
+    return render(request, 'base/room.html', context)
 def userprofile(request,pk):
     user = User.objects.get(id=pk)
     rooms= user.room_set.all()

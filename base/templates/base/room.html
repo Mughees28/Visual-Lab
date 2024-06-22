@@ -24,19 +24,19 @@
             <div class="room__box scroll">
                 <div class="room__header scroll">
                     <div class="room__info">
-                        <h3>{{room.name}}</h3>
-                        <span>{{room.created | timesince}}</span>
+                        <h3>{{ room.name }}</h3>
+                        <span>{{ room.created | timesince }}</span>
                     </div>
                     <div class="room__hosted">
                         <p>Hosted By</p>
                         <a href="{% url 'user-profile' room.host.id %}" class="room__author">
                             <div class="avatar avatar--small">
-                                <img src="{{room.host.avatar.url}}" />
+                                <img src="{{ room.host.avatar.url }}" />
                             </div>
-                            <span>@{{room.host.username}}</span>
+                            <span>@{{ room.host.username }}</span>
                         </a>
                     </div>
-                    <span class="room__topics">{{room.topic}}</span>
+                    <span class="room__topics">{{ room.topic }}</span>
                 </div>
                 <div class="room__conversation">
                     <div class="threads scroll" id="messages">
@@ -46,11 +46,11 @@
                                 <div class="thread__author">
                                     <a href="{% url 'user-profile' message.user.id %}" class="thread__authorInfo">
                                         <div class="avatar avatar--small">
-                                            <img src="{{message.user.avatar.url}}" />
+                                            <img src="{{ message.user.avatar.url }}" />
                                         </div>
-                                        <span>@{{message.user.username}}</span>
+                                        <span>@{{ message.user.username }}</span>
                                     </a>
-                                    <span class="thread__date">{{message.created | timesince}} ago</span>
+                                    <span class="thread__date">{{ message.created | timesince }} ago</span>
                                 </div>
                                 {% if request.user == message.user %}
                                 <a href="{% url 'delete-message' message.id %}">
@@ -61,7 +61,7 @@
                                 {% endif %}
                             </div>
                             <div class="thread__details">
-                                {{message.body}}
+                                {{ message.body }}
                             </div>
                         </div>
                         {% endfor %}
@@ -69,14 +69,14 @@
                 </div>
             </div>
             <div class="room__message">
-                <form id="form" action="" method="POST">
+                <form id="form" action="{% url 'room' room.id %}" method="POST">
                     {% csrf_token %}
                     <input name="message" placeholder="Write your message here..." />
                 </form>
             </div>
         </div>
         <div class="participants">
-            <h3 class="participants__top">Participants <span>{{participants.count}}</span></h3>
+            <h3 class="participants__top">Participants <span>{{ participants.count }}</span></h3>
             <div class="participants__list scroll">
                 {% for user in participants %}
                 <a href="{% url 'user-profile' user.id %}" class="participant">
@@ -84,8 +84,8 @@
                         <img src="https://randomuser.me/api/portraits/men/37.jpg" />
                     </div>
                     <p>
-                        {{user.username}}
-                        <span>@{{user.username}}</span>
+                        {{ user.username }}
+                        <span>@{{ user.username }}</span>
                     </p>
                 </a>
                 {% endfor %}
@@ -93,32 +93,108 @@
         </div>
     </div>
 </main>
+
 <script type="text/javascript">
-    let url = `ws://${window.location.host}/ws/socket-server/`
+  let form = document.getElementById('form');
+form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let message = e.target.message.value;
 
-    const chatSocket = new WebSocket(url)
-
-    chatSocket.onmessage = function(e){
-        let data = JSON.parse(e.data)
-        console.log('Data:', data)
-
-        if(data.type === 'chat'){
-            let messages = document.getElementById('messages')
-
-            messages.insertAdjacentHTML('beforeend', `<div>
-                                    <p>${data.message}</p>
-                                </div>`)
-        }
-    }
-
-    let form = document.getElementById('form')
-    form.addEventListener('submit', (e)=> {
-        e.preventDefault()
-        let message = e.target.message.value 
-        chatSocket.send(JSON.stringify({
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
             'message': message
-        }))
-        form.reset()
+        })
     })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Network response was not ok: ${response.statusText} - ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+        chatSocket.send(JSON.stringify({
+            'type': 'chat',
+            'message': data.message,
+            'user_id': data.user_id,
+            'username': data.username,
+            'user_avatar': data.user_avatar,
+            'message_id': data.message_id,
+            'is_user': data.is_user,
+            'created_at': data.created_at  // Include the created time
+        }));
+
+        // Display the message in the chat immediately
+        addMessageToChat(data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+
+    form.reset();
+});
+
+function addMessageToChat(data) {
+    let messages = document.getElementById('messages');
+    messages.insertAdjacentHTML('afterbegin', `
+        <div class="thread">
+            <div class="thread__top">
+                <div class="thread__author">
+                    <a href="/user-profile/${data.user_id}" class="thread__authorInfo">
+                        <div class="avatar avatar--small">
+                            <img src="${data.user_avatar}" />
+                        </div>
+                        <span>@${data.username}</span>
+                    </a>
+                    <span class="thread__date">${data.created_at}</span>
+                </div>
+                ${data.is_user ? `
+                <a href="/delete-message/${data.message_id}">
+                    <div class="thread__delete">
+                        <!-- Remove Icon SVG -->
+                    </div>
+                </a>` : ''}
+            </div>
+            <div class="thread__details">
+                ${data.message}
+            </div>
+        </div>
+    `);
+}
+
+const chatSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/socket-server/'
+);
+
+chatSocket.onopen = function(e) {
+    console.log('WebSocket connection opened:', e);
+};
+
+chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    console.log('WebSocket message received:', data);
+    if (data.type === 'chat') {
+        addMessageToChat(data);
+    }
+};
+
+chatSocket.onerror = function(e) {
+    console.error('WebSocket error:', e);
+};
+
+chatSocket.onclose = function(e) {
+    console.warn('WebSocket connection closed:', e);
+};
+
+
+
 </script>
 {% endblock %}
