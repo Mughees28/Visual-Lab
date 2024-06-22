@@ -145,7 +145,7 @@ form.addEventListener('submit', (e) => {
 function addMessageToChat(data) {
     let messages = document.getElementById('messages');
     messages.insertAdjacentHTML('afterbegin', `
-        <div class="thread">
+        <div class="thread" data-created-at="${data.created_at}">
             <div class="thread__top">
                 <div class="thread__author">
                     <a href="/user-profile/${data.user_id}" class="thread__authorInfo">
@@ -154,7 +154,7 @@ function addMessageToChat(data) {
                         </div>
                         <span>@${data.username}</span>
                     </a>
-                    <span class="thread__date">${data.created_at}</span>
+                    <span class="thread__date">${timeSince(new Date(data.created_at))}</span>
                 </div>
                 ${data.is_user ? `
                 <a href="/delete-message/${data.message_id}">
@@ -170,8 +170,39 @@ function addMessageToChat(data) {
     `);
 }
 
+function timeSince(date) {
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    let interval = Math.floor(seconds / 31536000);
+    if (interval > 1) return interval + " years ago";
+    interval = Math.floor(seconds / 2592000);
+    if (interval > 1) return interval + " months ago";
+    interval = Math.floor(seconds / 86400);
+    if (interval > 1) return interval + " days ago";
+    interval = Math.floor(seconds / 3600);
+    if (interval > 1) return interval + " hours ago";
+    interval = Math.floor(seconds / 60);
+    if (interval > 1) return interval + " minutes ago";
+    return Math.floor(seconds) + " seconds ago";
+}
+
+function updateTimestamps() {
+    const messages = document.querySelectorAll('.thread');
+    messages.forEach(message => {
+        const createdAt = new Date(message.getAttribute('data-created-at'));
+        const timeElement = message.querySelector('.thread__date');
+        timeElement.textContent = timeSince(createdAt);
+    });
+}
+
+// Update timestamps every minute
+setInterval(updateTimestamps, 60000);
+
+// Initialize WebSocket connection
+const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 const chatSocket = new WebSocket(
-    'ws://' + window.location.host + '/ws/socket-server/'
+    protocol + window.location.host + '/ws/socket-server/'
 );
 
 chatSocket.onopen = function(e) {
@@ -193,7 +224,6 @@ chatSocket.onerror = function(e) {
 chatSocket.onclose = function(e) {
     console.warn('WebSocket connection closed:', e);
 };
-
 
 
 </script>
