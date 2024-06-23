@@ -50,7 +50,7 @@
                                         </div>
                                         <span>@{{ message.user.username }}</span>
                                     </a>
-                                    <span class="thread__date">{{ message.created | timesince }} ago</span>
+                                    <span class="thread__date">{{ message.created }}</span>
                                 </div>
                                 {% if request.user == message.user %}
                                 <a href="{% url 'delete-message' message.id %}">
@@ -95,136 +95,105 @@
 </main>
 
 <script type="text/javascript">
-  let form = document.getElementById('form');
-form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    let message = e.target.message.value;
+    let form = document.getElementById('form');
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        let message = e.target.message.value;
 
-    fetch(form.action, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-            'message': message
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                'message': message
+            })
         })
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(`Network response was not ok: ${response.statusText} - ${text}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Success:', data);
-        chatSocket.send(JSON.stringify({
-            'type': 'chat',
-            'message': data.message,
-            'user_id': data.user_id,
-            'username': data.username,
-            'user_avatar': data.user_avatar,
-            'message_id': data.message_id,
-            'is_user': data.is_user,
-            'created_at': data.created_at  // Include the created time
-        }));
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`Network response was not ok: ${response.statusText} - ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success:', data);
+            chatSocket.send(JSON.stringify({
+                'type': 'chat',
+                'message': data.message,
+                'user_id': data.user_id,
+                'username': data.username,
+                'user_avatar': data.user_avatar,
+                'message_id': data.message_id,
+                'is_user': data.is_user,
+                'created_at': data.created_at  // Include the created time
+            }));
 
-        // Display the message in the chat immediately
-        addMessageToChat(data);
-    })
-    .catch(error => {
-        console.error('Error:', error);
+            // Display the message in the chat immediately
+            addMessageToChat(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+
+        form.reset();
     });
 
-    form.reset();
-});
-
-function addMessageToChat(data) {
-    let messages = document.getElementById('messages');
-    messages.insertAdjacentHTML('afterbegin', `
-        <div class="thread" data-created-at="${data.created_at}">
-            <div class="thread__top">
-                <div class="thread__author">
-                    <a href="/user-profile/${data.user_id}" class="thread__authorInfo">
-                        <div class="avatar avatar--small">
-                            <img src="${data.user_avatar}" />
-                        </div>
-                        <span>@${data.username}</span>
-                    </a>
-                    <span class="thread__date">${timeSince(new Date(data.created_at))}</span>
-                </div>
-                ${data.is_user ? `
-                <a href="/delete-message/${data.message_id}">
-                    <div class="thread__delete">
-                        <!-- Remove Icon SVG -->
+    function addMessageToChat(data) {
+        let messages = document.getElementById('messages');
+        messages.insertAdjacentHTML('afterbegin', `
+            <div class="thread" data-created-at="${data.created_at}">
+                <div class="thread__top">
+                    <div class="thread__author">
+                        <a href="/user-profile/${data.user_id}" class="thread__authorInfo">
+                            <div class="avatar avatar--small">
+                                <img src="${data.user_avatar}" />
+                            </div>
+                            <span>@${data.username}</span>
+                        </a>
+                        <span class="thread__date">${new Date(data.created_at).toLocaleString()}</span>
                     </div>
-                </a>` : ''}
+                    ${data.is_user ? `
+                    <a href="/delete-message/${data.message_id}">
+                        <div class="thread__delete">
+                            <!-- Remove Icon SVG -->
+                        </div>
+                    </a>` : ''}
+                </div>
+                <div class="thread__details">
+                    ${data.message}
+                </div>
             </div>
-            <div class="thread__details">
-                ${data.message}
-            </div>
-        </div>
-    `);
-}
-
-function timeSince(date) {
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-
-    let interval = Math.floor(seconds / 31536000);
-    if (interval > 1) return interval + " years ago";
-    interval = Math.floor(seconds / 2592000);
-    if (interval > 1) return interval + " months ago";
-    interval = Math.floor(seconds / 86400);
-    if (interval > 1) return interval + " days ago";
-    interval = Math.floor(seconds / 3600);
-    if (interval > 1) return interval + " hours ago";
-    interval = Math.floor(seconds / 60);
-    if (interval > 1) return interval + " minutes ago";
-    return Math.floor(seconds) + " seconds ago";
-}
-
-function updateTimestamps() {
-    const messages = document.querySelectorAll('.thread');
-    messages.forEach(message => {
-        const createdAt = new Date(message.getAttribute('data-created-at'));
-        const timeElement = message.querySelector('.thread__date');
-        timeElement.textContent = timeSince(createdAt);
-    });
-}
-
-// Update timestamps every minute
-setInterval(updateTimestamps, 60000);
-
-// Initialize WebSocket connection
-const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-const chatSocket = new WebSocket(
-    protocol + window.location.host + '/ws/socket-server/'
-);
-
-chatSocket.onopen = function(e) {
-    console.log('WebSocket connection opened:', e);
-};
-
-chatSocket.onmessage = function(e) {
-    const data = JSON.parse(e.data);
-    console.log('WebSocket message received:', data);
-    if (data.type === 'chat') {
-        addMessageToChat(data);
+        `);
     }
-};
 
-chatSocket.onerror = function(e) {
-    console.error('WebSocket error:', e);
-};
+    // Initialize WebSocket connection
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const chatSocket = new WebSocket(
+        protocol + window.location.host + '/ws/socket-server/'
+    );
 
-chatSocket.onclose = function(e) {
-    console.warn('WebSocket connection closed:', e);
-};
+    chatSocket.onopen = function(e) {
+        console.log('WebSocket connection opened:', e);
+    };
 
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log('WebSocket message received:', data);
+        if (data.type === 'chat') {
+            addMessageToChat(data);
+        }
+    };
 
+    chatSocket.onerror = function(e) {
+        console.error('WebSocket error:', e);
+    };
+
+    chatSocket.onclose = function(e) {
+        console.warn('WebSocket connection closed:', e);
+    };
 </script>
 {% endblock %}
