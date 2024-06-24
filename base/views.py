@@ -8,8 +8,13 @@ import json
 from django.contrib.auth import authenticate, login, logout
 from .models import Room,Topic, Message,User
 from .forms import RoomForm, UserForm, MyUserCreationForm
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
+
+@login_required
+def collaborator(request):
+    return render(request, 'base/collaborator.html')
 def loginpage(request):
     page ='login'
     if request.user.is_authenticated:
@@ -65,6 +70,7 @@ def home(request):
 
 logger = logging.getLogger(__name__)
 
+@csrf_exempt
 def room(request, pk):
     room = get_object_or_404(Room, id=pk)
     room_messages = room.message_set.all().order_by('-created')
@@ -95,11 +101,11 @@ def room(request, pk):
                 'created_at': message.created.strftime('%Y-%m-%d %H:%M:%S')  # Return the created time
             })
         except Exception as e:
-            logger.error(f"Error processing request: {str(e)}")
             return JsonResponse({'error': str(e)}, status=400)
 
     context = {'room': room, 'room_messages': room_messages, 'participants': participants}
     return render(request, 'base/room.html', context)
+
 def userprofile(request,pk):
     user = User.objects.get(id=pk)
     rooms= user.room_set.all()

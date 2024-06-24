@@ -37,7 +37,7 @@ ALLOWED_HOSTS = ['localhost',
 # Application definition
 
 INSTALLED_APPS = [
-    "channels",
+    # "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -51,13 +51,13 @@ INSTALLED_APPS = [
 ]
 AUTH_USER_MODEL='base.User'
 
-ASGI_APPLICATION ='project.asgi.application'
+# ASGI_APPLICATION ='project.asgi.application'
 
-CHANNEL_LAYERS = {
-    'default':{
-        'BACKEND':'channels.layers.InMemoryChannelLayer'
-    }
-}
+# CHANNEL_LAYERS = {
+#     'default':{
+#         'BACKEND':'channels.layers.InMemoryChannelLayer'
+#     }
+# }
 
 
 MIDDLEWARE = [

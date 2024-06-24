@@ -38,33 +38,12 @@
                     </div>
                     <span class="room__topics">{{ room.topic }}</span>
                 </div>
+                <div class="room__editor">
+                    <textarea id="editor" placeholder="Write your code here..."></textarea>
+                </div>
                 <div class="room__conversation">
                     <div class="threads scroll" id="messages">
-                        {% for message in room_messages %}
-                        <div class="thread">
-                            <div class="thread__top">
-                                <div class="thread__author">
-                                    <a href="{% url 'user-profile' message.user.id %}" class="thread__authorInfo">
-                                        <div class="avatar avatar--small">
-                                            <img src="{{ message.user.avatar.url }}" />
-                                        </div>
-                                        <span>@{{ message.user.username }}</span>
-                                    </a>
-                                    <span class="thread__date">{{ message.created }}</span>
-                                </div>
-                                {% if request.user == message.user %}
-                                <a href="{% url 'delete-message' message.id %}">
-                                    <div class="thread__delete">
-                                        <!-- Remove Icon SVG -->
-                                    </div>
-                                </a>
-                                {% endif %}
-                            </div>
-                            <div class="thread__details">
-                                {{ message.body }}
-                            </div>
-                        </div>
-                        {% endfor %}
+                        <!-- Messages will be loaded from Firebase -->
                     </div>
                 </div>
             </div>
@@ -84,62 +63,91 @@
                         <img src="{{ room.host.avatar.url }}" />
                     </div>
                     <p>
-                        <!-- {{ user.username }} -->
                         <span>@{{ user.username }}</span>
                     </p>
                 </a>
                 {% endfor %}
+                <!-- <hr> -->
+            <h3 class="participants__top">Chats</h3>
             </div>
         </div>
     </div>
 </main>
 
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
 <script type="text/javascript">
+    // Your Firebase configuration
+    const firebaseConfig = {
+  apiKey: "AIzaSyBGDZSOKDdCQzTpo8lPrunaj72qyJlxsjE",
+  authDomain: "visual-lab-7c610.firebaseapp.com",
+  databaseURL: "https://visual-lab-7c610-default-rtdb.firebaseio.com",
+  projectId: "visual-lab-7c610",
+  storageBucket: "visual-lab-7c610.appspot.com",
+  messagingSenderId: "740990404960",
+  appId: "1:740990404960:web:554d7cb9123bfb26b0b605",
+  measurementId: "G-STT3SC6T8T"
+};
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+
+    // Collaborative Editor
+    var editor = document.getElementById('editor');
+    var editorRef = database.ref('editor');
+
+    // Listen for changes in the Firebase database
+    editorRef.on('value', function(snapshot) {
+        editor.value = snapshot.val() || '';
+    });
+
+    // Update Firebase database on input
+    editor.addEventListener('input', function() {
+        editorRef.set(editor.value);
+    });
+
+    // Handling form submission
     let form = document.getElementById('form');
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         let message = e.target.message.value;
 
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                'message': message
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error(`Network response was not ok: ${response.statusText} - ${text}`);
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Success:', data);
-            chatSocket.send(JSON.stringify({
-                'type': 'chat',
-                'message': data.message,
-                'user_id': data.user_id,
-                'username': data.username,
-                'user_avatar': data.user_avatar,
-                'message_id': data.message_id,
-                'is_user': data.is_user,
-                'created_at': data.created_at  // Include the created time
-            }));
-
-            // Display the message in the chat immediately
-            addMessageToChat(data);
-        })
-        .catch(error => {
-            console.error('Error:', error);
+        // Store message in Firebase
+        var newMessageRef = database.ref('messages').push();
+        newMessageRef.set({
+            'message': message,
+            'user_id': '{{ request.user.id }}',
+            'username': '{{ request.user.username }}',
+            'user_avatar': '{{ request.user.avatar.url }}',
+            'created_at': new Date().toISOString()
         });
 
+        // Store message in Django database
+        fetch("{% url 'room' room.id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                'message': message,
+                'user_id': '{{ request.user.id }}',
+                'username': '{{ request.user.username }}',
+                'user_avatar': '{{ request.user.avatar.url }}',
+                'created_at': new Date().toISOString()
+            })
+        }).catch(error => console.error('Error:', error));
+
         form.reset();
+    });
+
+    // Listen for new messages in Firebase
+    var messagesRef = database.ref('messages');
+    messagesRef.on('child_added', function(snapshot) {
+        var data = snapshot.val();
+        addMessageToChat(data);
     });
 
     function addMessageToChat(data) {
@@ -156,7 +164,7 @@
                         </a>
                         <span class="thread__date">${new Date(data.created_at).toLocaleString()}</span>
                     </div>
-                    ${data.is_user ? `
+                    ${data.user_id === '{{ request.user.id }}' ? `
                     <a href="/delete-message/${data.message_id}">
                         <div class="thread__delete">
                             <!-- Remove Icon SVG -->
@@ -169,31 +177,5 @@
             </div>
         `);
     }
-
-    // Initialize WebSocket connection
-    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const chatSocket = new WebSocket(
-        protocol + window.location.host + '/ws/socket-server/'
-    );
-
-    chatSocket.onopen = function(e) {
-        console.log('WebSocket connection opened:', e);
-    };
-
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        console.log('WebSocket message received:', data);
-        if (data.type === 'chat') {
-            addMessageToChat(data);
-        }
-    };
-
-    chatSocket.onerror = function(e) {
-        console.error('WebSocket error:', e);
-    };
-
-    chatSocket.onclose = function(e) {
-        console.warn('WebSocket connection closed:', e);
-    };
 </script>
 {% endblock %}
