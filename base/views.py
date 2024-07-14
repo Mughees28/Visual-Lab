@@ -12,9 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
-@login_required
-def collaborator(request):
-    return render(request, 'base/collaborator.html')
+# @login_required
+# def collaborator(request):
+#     return render(request, 'base/collaborator.html')
 def loginpage(request):
     page ='login'
     if request.user.is_authenticated:

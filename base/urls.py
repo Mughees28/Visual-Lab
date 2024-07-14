@@ -15,6 +15,6 @@ urlpatterns=[
     path('update-user/',views.updateuser, name='update-user'),
     path('topics/',views.topicsPage, name='topics'),
     path('activity/',views.activityPage, name='activity'),
-    path('collaborator/', views.collaborator, name='collaborator'),
+    # path('collaborator/', views.collaborator, name='collaborator'),
     
 ]
