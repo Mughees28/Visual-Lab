@@ -34,7 +34,10 @@
         </svg>
         {{room.participants.all.count}} Joined
       </a>
+      <a class="roomListRoom__topic" href="{% url 'room' room.id %}">Request to join</a>
       <p class="roomListRoom__topic">{{room.topic.name}}</p>
+      
+      
     </div>
   </div>
 
